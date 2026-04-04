@@ -22,7 +22,7 @@ RequestExecutionLevel admin
 ; ----------------------------------------
 
 Name "RNDLogger_Automation"
-OutFile "../bin/RNDLogger_Automation_1.16.0_Setup.exe"
+OutFile "../../bin/RNDLogger_Automation_1.16.0_Setup.exe"
 InstallDir "D:\"
 
 ShowInstDetails show
@@ -52,13 +52,13 @@ Section "Install"
   ; Install application files (exclude TaskScheduler)
   ; ----------------------------------------
   SetOutPath "$INSTDIR\Programs"
-  File /r /x "TaskScheduler\*" "..\..\Programs\*.*"
+  File /r /x "TaskScheduler\*" "..\..\..\Programs\*.*"
 
   ; ----------------------------------------
   ; Extract TaskScheduler XMLs (temporary)
   ; ----------------------------------------
   SetOutPath "$PLUGINSDIR\TaskScheduler"
-  File /r "..\..\Programs\**\TaskScheduler\*.*"
+  File /r "..\..\..\Programs\**\TaskScheduler\*.*"
 
   ; ----------------------------------------
   ; Extract README_success.md to installer temp area
