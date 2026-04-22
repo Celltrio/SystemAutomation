@@ -7,7 +7,7 @@
 set -e
 
 # Convert Windows makensis.exe path for Bash usage
-NSIS="/c/ProgramFiles(x86)/NSIS/Bin/makensis.exe"
+NSIS="/c/Program Files (x86)/NSIS/Bin/makensis.exe"
 
 # NSIS script name
 NSI_SCRIPT="RNDLogger_Automation.nsi"
