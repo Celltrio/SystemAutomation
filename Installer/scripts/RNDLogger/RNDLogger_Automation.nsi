@@ -19,6 +19,8 @@ RequestExecutionLevel admin
 ; ----------------------------------------
 Var INSTALL_FAILED
 Var Icon
+Var Title
+
 
 ; ----------------------------------------
 ; UI Configuration
@@ -73,6 +75,9 @@ Section "Install"
 !insertmacro EmbedBmp "${UI_SUCCESS_BMP}" "${UI_SUCCESS_BMP_HEX}"
 !insertmacro EmbedBmp "${UI_FAILURE_BMP}" "${UI_FAILURE_BMP_HEX}"
 
+  DetailPrint "Success Icon: ${UI_SUCCESS_BMP}"
+  DetailPrint "Success Icon: ${UI_FAILURE_BMP}"
+
   ; ----------------------------------------
   ; Extract Binary Executable (temporary)
   ; ----------------------------------------
@@ -105,9 +110,9 @@ Section "Install"
     Goto DoneTasks
 
   ClearErrors
-  CopyFiles "$PLUGINSDIR\bin\${APP_BASE_DIR}.exe" "$INSTDIR\${APP_BASE_DIR}\CT Handler\${APP_BASE_DIR}.exe"
-  CopyFiles "$PLUGINSDIR\bin\${APP_BASE_DIR}.exe" "$INSTDIR\${APP_BASE_DIR}\Gantry\${APP_BASE_DIR}.exe"
-  CopyFiles "$PLUGINSDIR\bin\${APP_BASE_DIR}.exe" "$INSTDIR\${APP_BASE_DIR}\SCARA\${APP_BASE_DIR}.exe"
+  CopyFiles /SILENT "$PLUGINSDIR\bin\${APP_BASE_DIR}.exe" "$INSTDIR\${APP_BASE_DIR}\CT Handler\${APP_BASE_DIR}.exe"
+  CopyFiles /SILENT "$PLUGINSDIR\bin\${APP_BASE_DIR}.exe" "$INSTDIR\${APP_BASE_DIR}\Gantry\${APP_BASE_DIR}.exe"
+  CopyFiles /SILENT "$PLUGINSDIR\bin\${APP_BASE_DIR}.exe" "$INSTDIR\${APP_BASE_DIR}\SCARA\${APP_BASE_DIR}.exe"
 
   ; ----------------------------------------
   ; WORK SECTION – Process XML Tasks
@@ -125,13 +130,10 @@ Section "Install"
 TaskLoop:
   StrCpy $2 $1 -4
   DetailPrint "Processing scheduled task: $2"
-  DetailPrint "   tasks\$1"
 
   nsExec::ExecToStack '"schtasks.exe" /Query /TN "\$2"'
   Pop $3
   Pop $4
-DetailPrint "Here!: $3"
-DetailPrint "Here!: $4"
   ${If} $3 == 0
     nsExec::ExecToStack '"schtasks.exe" /End /TN "\$2"'
     Pop $3
@@ -143,16 +145,12 @@ DetailPrint "Here!: $4"
   nsExec::ExecToStack '"schtasks.exe" /Create /XML "$PLUGINSDIR\tasks\$1" /TN "\$2" /F'
   Pop $3
   Pop $4
-DetailPrint "Here!!: $3"
-DetailPrint "Here!!: $4"
   StrCmp $3 "0" 0 TaskError
 
   ClearErrors
   nsExec::ExecToStack '"schtasks.exe" /Run /TN "\$2"'
   Pop $3
   Pop $4
-DetailPrint "Here!!!: $3"
-DetailPrint "Here!!!: $4"
   StrCmp $3 "0" 0 TaskError
 
   FindNext $0 $1
@@ -183,6 +181,58 @@ FunctionEnd
 ; Success Page Display
 ; ----------------------------------------
 Function ShowSuccessPage
+  ; Disable Back button
+  GetDlgItem $0 $HWNDPARENT 3
+  EnableWindow $0 0
+
+  nsDialogs::Create 1018
+  Pop $0
+  ${If} $0 == error
+    MessageBox MB_ICONSTOP "Unable to display result page."
+    Return
+  ${EndIf}
+
+  ; -------------------------------------------------
+  ; Success icon (static control + LoadIcon)
+  ; -------------------------------------------------
+  nsDialogs::CreateControl "STATIC" \
+    ${WS_CHILD}|${WS_VISIBLE}|${SS_BITMAP} \
+    0 15u 10u 16u 16u ""
+  Pop $Icon
+
+  System::Call 'user32::LoadImage(i 0, t "$PLUGINSDIR\ui\success_green.bmp", i ${IMAGE_BITMAP}, i 16, i 16, i ${LR_LOADFROMFILE}) i .r9'
+  ;System::Call 'user32::LoadImage(i 0, t "$WINDIR\HelpPane.exe", i ${IMAGE_BITMAP}, i 16, i 16, i ${LR_LOADFROMFILE}) i .r9'
+  SendMessage $Icon ${STM_SETIMAGE} ${IMAGE_BITMAP} $9
+
+  ; -------------------------------------------------
+  ; Centered Title label
+  ; -------------------------------------------------
+  nsDialogs::CreateControl "STATIC" \
+    ${WS_CHILD}|${WS_VISIBLE}|${SS_CENTER}|${SS_CENTERIMAGE} \
+    0 36u 10u 85% 14u \
+    "RoboCell RNDLogger Automation"
+  Pop $Title
+
+  ; -------------------------------------------------
+  ; Scrollable text area (RichEdit)
+  ; -------------------------------------------------
+  nsDialogs::CreateControl "RichEdit20W" \
+    ${WS_CHILD}|${WS_VISIBLE}|${WS_VSCROLL}|${ES_MULTILINE}|${ES_READONLY}|${ES_AUTOVSCROLL} \
+    0 15u 28u 92% 70u ""
+  Pop $4
+
+  ${NSD_SetText} $4 \
+"The RNDLogger Automation installer has completed successfully.$\r$\n$\r$\n\
+Scheduled tasks created:$\r$\n\
+- CT Handler$\r$\n\
+- Gantry$\r$\n\
+- SCARA$\r$\n$\r$\n\
+Installed location: D:\Programs"
+
+  nsDialogs::Show
+FunctionEnd
+
+Function ShowSuccessBadPage
   GetDlgItem $0 $HWNDPARENT 3 ; Back button
   EnableWindow $0 0
 

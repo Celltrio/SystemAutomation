@@ -41,15 +41,27 @@
 ; ------------------------------------------------------------
 !macro EmbedBmp OUT_BMP_NAME HEX_DATA
 
-  ; Create a temporary file for HEX source (compile-time only)
-  !tempfile __embedbmp_hexfile
+  ; Capture a unique ID ONCE
+  !define _EMBED_ID ${__COUNTER__}
 
-  ; Write HEX content to temp file
-  !system 'cmd /c echo ${HEX_DATA} > "${__embedbmp_hexfile}"'
+  ; Create unique compile-time temp files
+  !tempfile EMBEDBMP_HEX_${_EMBED_ID}
+  !tempfile EMBEDBMP_BMP_${_EMBED_ID}
 
-  ; Decode HEX -> BMP using certutil
-  ; Output is the requested BMP filename
-  !system 'cmd /c certutil -decodehex "${__embedbmp_hexfile}" "${OUT_BMP_NAME}" > nul'
+  ; Write HEX to temp file
+  !system 'cmd /c echo ${HEX_DATA} > "${EMBEDBMP_HEX_${_EMBED_ID}}"'
+
+  ; Decode HEX -> BMP into temp file
+  !system 'cmd /c certutil -decodehex "${EMBEDBMP_HEX_${_EMBED_ID}}" "${EMBEDBMP_BMP_${_EMBED_ID}}" > nul'
+
+  ; Add BMP to installer data without leaving it on disk
+  File /oname=${OUT_BMP_NAME} "${EMBEDBMP_BMP_${_EMBED_ID}}"
+
+  ; Cleanup (compile-time)
+  !system 'cmd /c del /f /q "${EMBEDBMP_HEX_${_EMBED_ID}}" "${EMBEDBMP_BMP_${_EMBED_ID}}" > nul'
+
+  ; Cleanup symbol
+  !undef _EMBED_ID
 
 !macroend
 
